@@ -1,3 +1,4 @@
+import numpy as np
 import ray
 import time
 from actor import DDPG_Agent
@@ -41,6 +42,7 @@ class Testor(object):
         episode_reward = [0 for _ in range(max_episode)]
         env = Environment()
         for episode in range(max_episode):
+            v_data = []
             print('------ episode ', episode)
             print(f'------ reset, start from {test_idx[episode]}')
             obs = env.reset(idx=test_idx[episode])
@@ -52,6 +54,7 @@ class Testor(object):
                 print('------ step ', timestep)
                 action, bias, recover_thermal_flag, action_ori = self.agent.act(obs)
                 obs, reward, done, info = env.step(action)
+                v_data.append(obs[-33:])
 
                 episode_reward[episode] += reward
                 timestep += 1
@@ -59,7 +62,8 @@ class Testor(object):
                 if done or timestep == max_steps:
                     print('info:', info)
                     print(f'episode cumulative reward={episode_reward[episode]}')
-
+                    v_data = np.asarray(v_data)
+                    np.save(f'v_data_{test_idx[episode]}.npy', v_data)
                     break
 
             steps.append(timestep)

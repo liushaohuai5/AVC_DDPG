@@ -21,14 +21,11 @@ class SharedMemory(object):
         self.critic_loss_log = []
         self.actor_loss_log = []
         self.lr_log = []
-        self.imitation_weight_log = []
         self.start = False
 
         self.score = 0
         self.total_transitions = 0
 
-        self.imitation_flag = False
-        self.transition_flag = False
         self.parameters = parameters
         self.state_mean = np.zeros(parameters['state_dim'], dtype=np.float32)
         self.state_std = np.ones_like(self.state_mean)
@@ -76,12 +73,11 @@ class SharedMemory(object):
         self.test_max_score_log.append(test_max_score)
         self.test_mean_score_log.append(test_mean_score)
 
-    def add_learner_log(self, Q, critic_loss, actor_loss, lr, imitation_weight):
+    def add_learner_log(self, Q, critic_loss, actor_loss, lr):
         self.Q_log.append(Q)
         self.critic_loss_log.append(critic_loss)
         self.actor_loss_log.append(actor_loss)
         self.lr_log.append(lr)
-        self.imitation_weight_log.append(imitation_weight)
 
     def get_log(self):
         average_reward = None if len(self.average_reward_log) == 0 else self.average_reward_log.pop()
@@ -95,12 +91,11 @@ class SharedMemory(object):
         critic_loss = None if len(self.critic_loss_log) == 0 else self.critic_loss_log.pop()
         actor_loss = None if len(self.actor_loss_log) == 0 else self.actor_loss_log.pop()
         lr = None if len(self.lr_log) == 0 else self.lr_log.pop()
-        imitation_weight = None if len(self.imitation_weight_log) == 0 else self.imitation_weight_log.pop()
         total_transitions = self.total_transitions
         train_steps = self.step_counter
 
         return [average_reward, episode_reward, episode_len, noise_std, episode_backtimes, test_max_score, test_mean_score,
-                Q, critic_loss, actor_loss, lr, imitation_weight, total_transitions, train_steps]
+                Q, critic_loss, actor_loss, lr, total_transitions, train_steps]
 
     def get_mean_score(self):
         if len(self.test_mean_score_log) > 0:
@@ -112,18 +107,6 @@ class SharedMemory(object):
 
     def get_transitions(self):
         return self.total_transitions
-
-    def set_imitation_flag(self):
-        self.imitation_flag = False
-
-    def set_transition_flag(self, flag):
-        self.transition_flag = flag
-
-    def get_transition_flag(self):
-        return self.transition_flag
-
-    def get_imitation_flag(self):
-        return self.imitation_flag
 
     def set_state_action_mean_std(self, state_mean, state_std, action_mean, action_std):
         self.state_mean, self.state_std = state_mean, state_std

@@ -74,8 +74,8 @@ class Actor_DDPG(object):
 
             new_model_index = train_step // self.parameters['actor_update_interval']
             if start_training and new_model_index > self.last_model_index:
-                if self.id == 0:
-                    print(f'=======actor model updated========\n new_model_index={new_model_index}')
+                # if self.id == 0:
+                #     print(f'=======actor model updated========\n new_model_index={new_model_index}')
                 self.last_model_index = new_model_index
                 actor_weights, actor_target_weights, critic_weights, critic_target_weights = ray.get(self.shared_memory.get_weights.remote())
                 self.agent.actor.set_weights(actor_weights)
@@ -98,7 +98,7 @@ class Actor_DDPG(object):
                 # action_mean_b = torch.from_numpy(action_mean).float().to(self.device)
                 # action_std_b = torch.from_numpy(action_std).float().to(self.device)
 
-                print(f'actor_id={self.id}, info={info}, episode_num={episode_num}, episode_reward={episode_reward:.2f}, episode_steps={episode_timesteps}')
+                # print(f'actor_id={self.id}, info={info}, episode_num={episode_num}, episode_reward={episode_reward:.2f}, episode_steps={episode_timesteps}')
 
                 state_b, action_b, next_state_b, reward_b, done_b = self.local_buffer.get_whole_buffer()
 
@@ -111,7 +111,7 @@ class Actor_DDPG(object):
 
                 priorities = L1Loss(reduction='none')(Q_current, Q_target).data.cpu().numpy() + 1e-5
                 # if info == {}:  # only full episodes could be sent to shared buffer
-                print(f'----------------------------------- actor {self.id} push a full episode ---------------------------------')
+                # print(f'----------------------------------- actor {self.id} push a full episode ---------------------------------')
                 self.storage.push_trajectory(
                     (state_b.detach().cpu().numpy(),
                     action_b.detach().cpu().numpy(),

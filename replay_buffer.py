@@ -103,9 +103,6 @@ class SharedBuffer(object):
         self.reward = np.zeros((self.max_size, 1), dtype=np.float32)
         self.done = np.zeros((self.max_size, 1), dtype=np.float32)
 
-        self.imitation_full_flag = False
-        self.save_flag = False
-
     def add_trajectory(self, state, action, next_state, reward, done, priorities):
         self.mini_batch_size = len(reward)
         if self.ptr + self.mini_batch_size > self.max_size:
@@ -124,8 +121,6 @@ class SharedBuffer(object):
         self.crt_size = min(self.crt_size + self.mini_batch_size, self.max_size)
         self.count += self.mini_batch_size
         self.shared_memory.incr_transitions.remote(self.count)
-        # if self.count > int(0.3 * self.buffer_size):
-        #     self.shared_memory.set_imitation_flag.remote()
 
     def sample_batch(self):
         probs = self.priorities[:self.crt_size] ** self.alpha

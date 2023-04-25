@@ -61,7 +61,7 @@ if __name__ == '__main__':
         "only_thermal": False,
         "guided_policy_search": True,
         "random_explore": 'Gaussian',  # Gaussian or EpsGreedy or none
-        'actor_num': 1,
+        'actor_num': 8,
         'actor_update_interval': 100,
         'log_interval': 10000,
         'total_transitions': 20 * 1000 * 1000,
@@ -79,7 +79,6 @@ if __name__ == '__main__':
     parameters['action_dim'] = len(env.gen_ids)
     state_dim = parameters['state_dim']
     action_dim = parameters['action_dim']
-    print(action_dim)
 
     ray.init(num_gpus=2, num_cpus=80, object_store_memory=100 * 1024 * 1024 * 1024)
 

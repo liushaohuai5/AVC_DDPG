@@ -40,15 +40,7 @@ class Learner_DDPG(object):
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_target.eval()
 
-        # self.last_actor_loss = 0
-        # self.optimizer_reset_flag = False
-
         self.last_Q = deque(maxlen=10)
-        # self.trainsition_flag = False
-        # self.change_cnt = 0
-
-        # self.imitation_weight = 1.0
-        # self.rl_weight = 1.0 - self.imitation_weight
 
         self.model_saved_flag = False
 
@@ -57,7 +49,6 @@ class Learner_DDPG(object):
             param_group['lr'] = param_group['lr'] * decay_rate
 
     def _train(self, batch):
-        # imitation_flag = ray.get(self.shared_memory.get_imitation_flag.remote())
         # batch_item, state_mean, state_std, action_mean, action_std = batch
         batch_item, _, _, _, _ = batch
         state, action, next_state, reward, done, ind, weights_lst = batch_item
@@ -105,12 +96,8 @@ class Learner_DDPG(object):
         torch.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=2)
         self.actor_optimizer.step()
 
-        if self.time_step % 100 == 0:
-            print(f'training steps={self.time_step}')
-            # print(f'actor gradient max={max([np.abs(p).max() for p in self.actor.get_gradients()])}')
-            # print(f'imitation phase={imitation_flag}, transition phase={self.trainsition_flag}, change_cnt={self.change_cnt}')
-            # print(f'critic gradient max={max([np.abs(p).max() for p in self.critic.get_gradients()])}')
-            print(f'actor loss={actor_loss:.3f}, critic loss={critic_loss:.3f}')
+        if self.time_step % 500 == 0:
+            print(f'training steps={self.time_step}, actor loss={actor_loss:.3f}, critic loss={critic_loss:.3f}')
 
 
         return {
@@ -119,7 +106,6 @@ class Learner_DDPG(object):
             'training/critic_loss': critic_loss.mean().detach().cpu().numpy(),
             'training/actor_loss': actor_loss.mean().detach().cpu().numpy(),
             'training/lr': self.actor_optimizer.param_groups[0]['lr'],
-            # 'training/imitation_weight': self.imitation_weight
         }
 
     def save(self, filename):
@@ -142,7 +128,7 @@ class Learner_DDPG(object):
 
     def _log(self, log_info):
         average_reward, episode_reward, episode_len, noise_std, episode_backtimes, test_max_score, test_mean_score, \
-        Q, critic_loss, actor_loss, lr, imitation_weight, total_transitions, train_steps = log_info
+        Q, critic_loss, actor_loss, lr, total_transitions, train_steps = log_info
         if average_reward is not None:
             self.summary_writer.add_scalar('episode/average_reward', average_reward, train_steps)
             self.summary_writer.add_scalar('episode/cumulative_reward', episode_reward, train_steps)
@@ -157,7 +143,6 @@ class Learner_DDPG(object):
             self.summary_writer.add_scalar('training/critic_loss', critic_loss, train_steps)
             self.summary_writer.add_scalar('training/actor_loss', actor_loss, train_steps)
             self.summary_writer.add_scalar('training/lr', lr, train_steps)
-            self.summary_writer.add_scalar('training/imitation_weight', imitation_weight, train_steps)
             self.summary_writer.add_scalar('training/total_transitions', total_transitions, train_steps)
 
     def load(self, filename):
@@ -197,8 +182,7 @@ class Learner_DDPG(object):
             if self.time_step % self.parameters['log_interval'] == 0:
                 self.shared_memory.add_learner_log.remote(train_info['training/Q'],
                                                           train_info['training/critic_loss'],
-                                                          train_info['training/actor_loss'], train_info['training/lr'],
-                                                          train_info['training/imitation_weight'])
+                                                          train_info['training/actor_loss'], train_info['training/lr'])
                 log_info = ray.get(self.shared_memory.get_log.remote())
                 self._log(log_info)
 
