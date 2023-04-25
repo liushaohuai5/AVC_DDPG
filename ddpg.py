@@ -27,8 +27,6 @@ class ActorNet(nn.Module):
 
     def set_weights(self, weights):
         self.load_state_dict(weights)
-        self.cuda()
-
 
 class CriticNet(nn.Module):
     def __init__(self, state_dim, action_dim):
@@ -58,5 +56,4 @@ class CriticNet(nn.Module):
 
     def set_weights(self, weights):
         self.load_state_dict(weights)
-        self.cuda()
 

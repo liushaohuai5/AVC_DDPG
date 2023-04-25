@@ -56,12 +56,12 @@ class Actor_DDPG(object):
             start_training = ray.get(self.shared_memory.get_start_signal.remote())
             train_step = ray.get(self.shared_memory.get_counter.remote())
 
-
-
             episode_timesteps += 1
+            # if episode_timesteps % 10 == 0:
+            #     print(f'step={episode_timesteps}')
             # Epsilon-Greedy
-            action = self.agent.act()
-            if np.random.uniform(0, 1) < self.epsilon_schedule.value(time_step):
+            action = self.agent.act(obs)
+            if np.random.uniform(0, 1) < 0.1:
                 action += np.random.normal(0, 1, (self.parameters['action_dim']))
 
             next_obs, reward, done, info = self.env.step(action)
@@ -79,24 +79,24 @@ class Actor_DDPG(object):
                 self.last_model_index = new_model_index
                 actor_weights, actor_target_weights, critic_weights, critic_target_weights = ray.get(self.shared_memory.get_weights.remote())
                 self.agent.actor.set_weights(actor_weights)
-                self.agent.actor.to(self.device)
+                self.agent.actor.cuda()
                 self.agent.actor.eval()
                 self.agent.actor_target.set_weights(actor_target_weights)
-                self.agent.actor_target.to(self.device)
+                self.agent.actor_target.cuda()
                 self.agent.actor_target.eval()
                 self.agent.critic.set_weights(critic_weights)
-                self.agent.critic.to(self.device)
+                self.agent.critic.cuda()
                 self.agent.critic.eval()
                 self.agent.critic_target.set_weights(critic_target_weights)
-                self.agent.critic_target.to(self.device)
+                self.agent.critic_target.cuda()
                 self.agent.critic_target.eval()
 
             if done or ((episode_timesteps+1) % self.parameters['actor_buffer_size'] == 0 and time_step > 0):
-                state_mean, state_std, action_mean, action_std = ray.get(self.shared_memory.get_state_action_mean_std.remote())
-                state_mean_b = torch.from_numpy(state_mean).float().to(self.device)
-                state_std_b = torch.from_numpy(state_std).float().to(self.device)
-                action_mean_b = torch.from_numpy(action_mean).float().to(self.device)
-                action_std_b = torch.from_numpy(action_std).float().to(self.device)
+                # state_mean, state_std, action_mean, action_std = ray.get(self.shared_memory.get_state_action_mean_std.remote())
+                # state_mean_b = torch.from_numpy(state_mean).float().to(self.device)
+                # state_std_b = torch.from_numpy(state_std).float().to(self.device)
+                # action_mean_b = torch.from_numpy(action_mean).float().to(self.device)
+                # action_std_b = torch.from_numpy(action_std).float().to(self.device)
 
                 print(f'actor_id={self.id}, info={info}, episode_num={episode_num}, episode_reward={episode_reward:.2f}, episode_steps={episode_timesteps}')
 
@@ -105,12 +105,11 @@ class Actor_DDPG(object):
                 # Compute the target Q value using the information of next state
                 next_action_b = self.agent.actor_target(next_state_b)
                 # TODO: add action normalization
-                # Q_tmp = self.agent.critic_target(next_state_b, next_action_b)
                 Q_tmp = self.agent.critic_target(next_state_b, next_action_b)
                 Q_target = reward_b + self.gamma * (1 - done_b) * Q_tmp
                 Q_current = self.agent.critic(state_b, action_b)
 
-                priorities = L1Loss(reduction='none')(Q_current, Q_target).data.cpu().numpy() + 1e-6
+                priorities = L1Loss(reduction='none')(Q_current, Q_target).data.cpu().numpy() + 1e-5
                 # if info == {}:  # only full episodes could be sent to shared buffer
                 print(f'----------------------------------- actor {self.id} push a full episode ---------------------------------')
                 self.storage.push_trajectory(
@@ -167,6 +166,6 @@ class DDPG_Agent:
         self.critic_target.load_state_dict(torch.load(filename + "_DDPG_critic"))
 
     def act(self, obs):
-        state = torch.from_numpy(obs).unsqueeze(0).to(self.device)
+        state = torch.from_numpy(obs).unsqueeze(0).float().cuda()
         action = self.actor(state).squeeze().detach().cpu().numpy()
         return action

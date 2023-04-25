@@ -57,11 +57,10 @@ class Learner_DDPG(object):
             param_group['lr'] = param_group['lr'] * decay_rate
 
     def _train(self, batch):
-        imitation_flag = ray.get(self.shared_memory.get_imitation_flag.remote())
+        # imitation_flag = ray.get(self.shared_memory.get_imitation_flag.remote())
         # batch_item, state_mean, state_std, action_mean, action_std = batch
         batch_item, _, _, _, _ = batch
-        state, action, action_high, action_low, next_state, next_action_high, next_action_low, reward, done, ind, weights_lst,\
-            ready_thermal_mask, closable_thermal_mask, next_ready_thermal_mask, next_closable_thermal_mask, recover_thermal_flag, success_attempts, failed_attempts = batch_item
+        state, action, next_state, reward, done, ind, weights_lst = batch_item
 
 
         state = torch.from_numpy(state).float().cuda()

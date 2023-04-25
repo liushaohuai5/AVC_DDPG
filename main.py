@@ -17,7 +17,7 @@ if __name__ == '__main__':
         'algo': 'ddpg',
         'PER': True,
         'n_step_bootstrap': True,
-        'n_step_return': 10,
+        'n_step_return': 5,
         "start_timesteps": 600,
         "initial_eps": 0.9,
         "end_eps": 0.001,
@@ -61,7 +61,7 @@ if __name__ == '__main__':
         "only_thermal": False,
         "guided_policy_search": True,
         "random_explore": 'Gaussian',  # Gaussian or EpsGreedy or none
-        'actor_num': 16,
+        'actor_num': 1,
         'actor_update_interval': 100,
         'log_interval': 10000,
         'total_transitions': 20 * 1000 * 1000,
@@ -72,8 +72,6 @@ if __name__ == '__main__':
         'load_model': False
     }
 
-    import ipdb
-    ipdb.set_trace()
     # get state dim and action dim
     env = Environment()
     obs = env.reset()
@@ -81,6 +79,7 @@ if __name__ == '__main__':
     parameters['action_dim'] = len(env.gen_ids)
     state_dim = parameters['state_dim']
     action_dim = parameters['action_dim']
+    print(action_dim)
 
     ray.init(num_gpus=2, num_cpus=80, object_store_memory=100 * 1024 * 1024 * 1024)
 
