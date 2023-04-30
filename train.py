@@ -30,11 +30,13 @@ class Learner_DDPG(object):
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(),
                                                 lr=parameters['actor']['lr'],
                                                 betas=parameters['actor']['betas'],
-                                                weight_decay=parameters['actor']['weight_decay'])
+                                                weight_decay=parameters['actor']['weight_decay']
+                                                )
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(),
                                                  lr=parameters['critic']['lr'],
                                                  betas=parameters['actor']['betas'],
-                                                 weight_decay=parameters['critic']['weight_decay'])
+                                                 weight_decay=parameters['critic']['weight_decay']
+                                                 )
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_target.eval()
         self.critic_target = copy.deepcopy(self.critic)
@@ -68,22 +70,22 @@ class Learner_DDPG(object):
 
         # Compute the target Q value using the information of next state
         next_action = self.actor_target(next_state)
-        Q_tmp = self.critic_target(next_state, next_action)
-        Q_target = reward + self.gamma * (1 - done) * Q_tmp
+        Q_next = self.critic_target(next_state, next_action)
+        Q_target = reward + self.gamma ** (self.parameters['n_step_return']) * (1 - done) * Q_next
         Q_current = self.critic(state, action)
 
-        td_errors = Q_target - Q_current
         # TODO: add PID controller intergral part to reduce Q value over-estimation, cumulative_errors += td_errors
         priorities = L1Loss(reduction='none')(Q_current, Q_target).data.cpu().numpy() + 1e-6
         self.storage.push_priority((ind, priorities))
 
         # Compute the current Q value and the loss
+        td_errors = Q_target - Q_current
         critic_loss = torch.mean(weights * (td_errors ** 2))  # with importance sampling
 
         # Optimize the critic network
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=2)
+        torch.nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=10)
         self.critic_optimizer.step()
 
         # Make action and evaluate its action values
@@ -93,11 +95,12 @@ class Learner_DDPG(object):
         # Optimize the actor network
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=2)
+        torch.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=10)
         self.actor_optimizer.step()
 
         if self.time_step % 500 == 0:
-            print(f'training steps={self.time_step}, actor loss={actor_loss:.3f}, critic loss={critic_loss:.3f}')
+            print(f'training steps={self.time_step}, Q={Q.mean():.3f}, actor loss={actor_loss:.3f}, '
+                  f'critic loss={critic_loss:.3f}, batch_queue={self.storage.batch_queue.qsize()}')
 
 
         return {
@@ -171,9 +174,10 @@ class Learner_DDPG(object):
             self.time_step += 1
             self.shared_memory.incr_counter.remote()
 
-            if self.time_step % self.parameters['target_update_interval'] == 0:
-                self.hard_target_update()
-                print('target_model is updated')
+            self.soft_target_update()
+            # if self.time_step % self.parameters['target_update_interval'] == 0:
+            #     self.hard_target_update()
+            #     print('target_model is updated')
 
             if self.time_step % self.parameters['actor_update_interval'] == 0:
                 self.shared_memory.set_weights.remote(self.actor.get_weights(), self.actor_target.get_weights(),

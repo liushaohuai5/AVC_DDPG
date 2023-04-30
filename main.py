@@ -33,19 +33,19 @@ if __name__ == '__main__':
             "weight_decay": 5e-3
         },
         "actor": {
-            "lr": 0.0001,
+            "lr": 1e-4,
             "tau": 0.001,
             "betas": [0.9, 0.999],
-            "weight_decay": 5e-3,
+            "weight_decay": 1e-4,
             "update_frequency": 1,
             "hidden_dim": 512,
             "hidden_depth": 2,
             "log_std_bound": [-5, 2]
         },
         "critic": {
-            "lr": 1e-4,
+            "lr": 2e-4,
             "betas": [0.9, 0.999],
-            "weight_decay": 5e-3,
+            "weight_decay": 1e-4,
             "tau": 0.005,
             "target_update_frequency": 1,
             "hidden_dim": 512,
@@ -55,15 +55,15 @@ if __name__ == '__main__':
         "training_iterations": 1000 * 1000,
         "actor_buffer_size": 288,
         "shared_buffer_size": 1000 * 1000,
-        "target_update_interval": 100,
+        "target_update_interval": 1000,
         "test_interval": 5e3,
         "only_power": True,
         "only_thermal": False,
         "guided_policy_search": True,
         "random_explore": 'Gaussian',  # Gaussian or EpsGreedy or none
         'actor_num': 8,
-        'actor_update_interval': 100,
-        'log_interval': 10000,
+        'actor_update_interval': 1000,
+        'log_interval': 1000,
         'total_transitions': 20 * 1000 * 1000,
         'encoder': 'mlp',
         'lr_decay_rate': 0.95,
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     env = Environment()
     obs = env.reset()
     parameters['state_dim'] = len(obs)
-    parameters['action_dim'] = len(env.gen_ids)
+    parameters['action_dim'] = len(env.gen_to_bus)
     state_dim = parameters['state_dim']
     action_dim = parameters['action_dim']
 

@@ -23,7 +23,7 @@ class Testor(object):
 
     def run_task(self, actor_weights, state_mean, state_std):
         self.agent.actor.set_weights(actor_weights)
-        self.agent.actor.to(self.device)
+        self.agent.actor.cuda()
         self.agent.actor.eval()
 
         test_idx = [
@@ -40,7 +40,7 @@ class Testor(object):
         max_episode = len(test_idx)
         max_steps = 288
         episode_reward = [0 for _ in range(max_episode)]
-        env = Environment()
+        env = Environment(is_test=True)
         for episode in range(max_episode):
             v_data = []
             print('------ episode ', episode)
@@ -52,7 +52,7 @@ class Testor(object):
 
             while timestep <= max_steps:
                 print('------ step ', timestep)
-                action, bias, recover_thermal_flag, action_ori = self.agent.act(obs)
+                action = self.agent.act(obs)
                 obs, reward, done, info = env.step(action)
                 v_data.append(obs[-33:])
 

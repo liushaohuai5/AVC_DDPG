@@ -87,7 +87,7 @@ class SharedBuffer(object):
         # Prioritized Experience Replay
         self.alpha = 0.6
         self.priorities = np.ones((self.max_size, 1))
-        self.beta = -0.4
+        self.beta = 0.4
         # self.beta_schedule = LinearSchedule(parameters['total_transitions'], final_p=1.0, initial_p=self.init_beta)
 
         self.n_step_return = parameters['n_step_return']
@@ -117,7 +117,7 @@ class SharedBuffer(object):
         self.priorities[ind] = priorities
 
         self.ptr = (self.ptr + self.mini_batch_size) % self.max_size
-        print(f'ptr={self.ptr}, len={len(reward)}')
+        # print(f'ptr={self.ptr}, len={len(reward)}')
         self.crt_size = min(self.crt_size + self.mini_batch_size, self.max_size)
         self.count += self.mini_batch_size
         self.shared_memory.incr_transitions.remote(self.count)

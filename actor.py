@@ -7,6 +7,7 @@ import copy
 from environment import Environment
 from replay_buffer import LocalBuffer
 from utils import LinearSchedule
+import colorednoise as cn
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -61,8 +62,9 @@ class Actor_DDPG(object):
             #     print(f'step={episode_timesteps}')
             # Epsilon-Greedy
             action = self.agent.act(obs)
-            if np.random.uniform(0, 1) < 0.1:
-                action += np.random.normal(0, 1, (self.parameters['action_dim']))
+            if np.random.uniform(0, 1) < 0.2:
+                # action += np.random.normal(0, 1, (self.parameters['action_dim']))
+                action += cn.powerlaw_psd_gaussian(1, self.parameters['action_dim'])
 
             next_obs, reward, done, info = self.env.step(action)
 
